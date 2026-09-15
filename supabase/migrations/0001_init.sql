@@ -183,14 +183,14 @@ insert into public.seasons (year, sport) values (2026, 'NFL')
 -- Adjust dates once the official NFL schedule is released if these drift.
 do $$
 declare
-  season_id uuid;
+  v_season_id uuid;
   week_start date := date '2026-09-10';
 begin
-  select id into season_id from public.seasons where year = 2026 and sport = 'NFL';
+  select id into v_season_id from public.seasons where year = 2026 and sport = 'NFL';
 
   for i in 1..18 loop
     insert into public.weeks (season_id, week_number, start_date, end_date)
-    values (season_id, i, week_start, week_start + interval '6 days')
+    values (v_season_id, i, week_start, week_start + interval '6 days')
     on conflict (season_id, week_number) do nothing;
     week_start := week_start + interval '7 days';
   end loop;
