@@ -1,5 +1,7 @@
 "use client";
 
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { deleteSession } from "@/app/(dashboard)/parlays/actions";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,8 +17,25 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export function DeleteSessionButton({ sessionId, label }: { sessionId: string; label: string }) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+
+  function handleDelete() {
+    setError(null);
+    startTransition(async () => {
+      try {
+        await deleteSession(sessionId);
+        router.push("/parlays");
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Couldn't delete this session.");
+      }
+    });
+  }
+
   return (
-    <AlertDialog>
+    <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger render={<Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive">Delete</Button>} />
       <AlertDialogContent>
         <AlertDialogHeader>
@@ -26,13 +45,12 @@ export function DeleteSessionButton({ sessionId, label }: { sessionId: string; l
             undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
+        {error && <p className="text-sm text-destructive">{error}</p>}
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <form action={deleteSession.bind(null, sessionId)}>
-            <AlertDialogAction type="submit" variant="destructive">
-              Delete
-            </AlertDialogAction>
-          </form>
+          <AlertDialogAction variant="destructive" disabled={pending} onClick={handleDelete}>
+            {pending ? "Deleting…" : "Delete"}
+          </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

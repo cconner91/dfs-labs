@@ -23,9 +23,9 @@ function formatCurrency(v: number) {
 export default async function ParlaySessionPage({
   params,
 }: {
-  params: Promise<{ sessionId: string }>;
+  params: Promise<{ slug: string }>;
 }) {
-  const { sessionId } = await params;
+  const { slug: sessionId } = await params;
   const { supabase, user } = await requireUser();
 
   const session = await getSession(supabase, sessionId);

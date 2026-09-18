@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath, updateTag } from "next/cache";
 import { z } from "zod";
 import { requireUser } from "@/lib/parlays/data";
+import { generateSessionSlug } from "@/lib/parlays/slug";
 import { NFL_DATA_CACHE_TAG } from "@/lib/parlays/cache-tags";
 import type { GeneratedParlay, WeeklyPlayerRow } from "@/lib/parlays/types";
 
@@ -27,6 +28,7 @@ export async function createSession(_prevState: ActionState, formData: FormData)
   const { data, error } = await supabase
     .from("td_parlay_sessions")
     .insert({
+      id: generateSessionSlug(parsed.data.label),
       user_id: user.id,
       label: parsed.data.label,
       total_bankroll: parsed.data.total_bankroll,
@@ -46,11 +48,11 @@ export async function deleteSession(sessionId: string) {
     .eq("id", sessionId)
     .eq("user_id", user.id);
   if (error) throw error;
-  redirect("/parlays");
+  revalidatePath("/parlays");
 }
 
 const playerSchema = z.object({
-  session_id: z.string().uuid(),
+  session_id: z.string().min(1),
   name: z.string().min(1, "Player name is required"),
   team: z.string().optional(),
   american_odds: z.coerce.number().int().refine((n) => n !== 0, "Odds can't be 0"),
@@ -137,7 +139,7 @@ export async function updatePlayerOdds(
 }
 
 const groupSchema = z.object({
-  session_id: z.string().uuid(),
+  session_id: z.string().min(1),
   label: z.string().min(1, "Give this group a name"),
   bankroll: z.coerce.number().positive("Bankroll must be greater than 0"),
   num_parlays: z.coerce.number().int().positive().max(50),
@@ -248,4 +250,17 @@ export async function deleteSavedParlaySet(parlayIds: string[], sessionId: strin
   const { error } = await supabase.from("td_parlays").delete().in("id", parlayIds);
   if (error) throw error;
   revalidatePath(`/parlays/${sessionId}`);
+}
+
+export async function toggleParlayEntered(
+  parlayId: string,
+  sessionId: string,
+  entered: boolean
+): Promise<{ error: string | null }> {
+  const { supabase } = await requireUser();
+  const { error } = await supabase.from("td_parlays").update({ is_entered: entered }).eq("id", parlayId);
+  if (error) return { error: error.message };
+
+  revalidatePath(`/parlays/${sessionId}`);
+  return { error: null };
 }

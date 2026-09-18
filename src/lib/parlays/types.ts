@@ -70,6 +70,7 @@ export interface SavedParlay {
   combined_probability: number;
   payout_multiplier: number;
   stake: number;
+  is_entered: boolean;
   created_at: string;
 }
 
