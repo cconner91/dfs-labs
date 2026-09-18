@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { removePoolEntry } from "@/app/(dashboard)/player-pools/actions";
 import { formatCurrency } from "@/lib/metrics";
 import type { PlayerPoolEntry, Position } from "@/lib/types";
@@ -18,6 +19,7 @@ function positionSortKey(position: Position | null): number {
 }
 
 function RemoveButton({ id }: { id: string }) {
+  const router = useRouter();
   const [pending, startTransition] = useTransition();
   return (
     <Button
@@ -26,7 +28,12 @@ function RemoveButton({ id }: { id: string }) {
       size="sm"
       className="text-muted-foreground"
       disabled={pending}
-      onClick={() => startTransition(() => removePoolEntry(id))}
+      onClick={() =>
+        startTransition(async () => {
+          await removePoolEntry(id);
+          router.refresh();
+        })
+      }
     >
       {pending ? "Removing…" : "Remove"}
     </Button>

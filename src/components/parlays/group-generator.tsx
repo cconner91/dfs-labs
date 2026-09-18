@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { deleteGroup, saveGeneratedParlays, toggleParlayEntered } from "@/app/(dashboard)/parlays/actions";
 import { generateParlaysForGroup } from "@/lib/parlays/engine";
 import type { GeneratedParlay, SavedParlay, TdParlayGroup, TdParlayPlayer } from "@/lib/parlays/types";
@@ -43,11 +44,13 @@ function ParlayCard({
   const potentialPayout = "potentialPayout" in parlay ? parlay.potentialPayout : stake * multiplier;
   const entered = isSaved && parlay.is_entered;
 
+  const router = useRouter();
   const [pending, startTransition] = useTransition();
   function handleToggleEntered() {
     if (!isSaved) return;
     startTransition(async () => {
       await toggleParlayEntered(parlay.id, sessionId, !parlay.is_entered);
+      router.refresh();
     });
   }
 
@@ -112,6 +115,7 @@ export function GroupGenerator({
   pool: TdParlayPlayer[];
   savedParlays: SavedParlay[];
 }) {
+  const router = useRouter();
   const [generated, setGenerated] = useState<GeneratedParlay[] | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
@@ -144,6 +148,7 @@ export function GroupGenerator({
       setSaveError(result.error);
     } else {
       setGenerated(null);
+      router.refresh();
     }
   }
 
@@ -153,6 +158,7 @@ export function GroupGenerator({
       try {
         await deleteGroup(group.id, sessionId);
         setDeleteOpen(false);
+        router.refresh();
       } catch (err) {
         setDeleteError(err instanceof Error ? err.message : "Couldn't delete this group.");
       }

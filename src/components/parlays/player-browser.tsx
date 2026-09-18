@@ -86,6 +86,7 @@ export function PlayerBrowser({ sessionId, players }: { sessionId: string; playe
       setAddError(`Couldn't add ${player.name}: ${result.error}`);
     } else {
       setAddedIds((prev) => new Set(prev).add(player.espn_id));
+      router.refresh();
     }
   }
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { importGroupsCsv, importSalaryCsv } from "@/app/(dashboard)/player-pools/actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -37,6 +38,7 @@ function ImportButton({
 }
 
 export function PoolImportControls({ weekId }: { weekId: string }) {
+  const router = useRouter();
   const [importingGroups, startGroupsTransition] = useTransition();
   const [importingSalary, startSalaryTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -47,6 +49,7 @@ export function PoolImportControls({ weekId }: { weekId: string }) {
       const text = await file.text();
       const result = await importGroupsCsv(weekId, file.name, text);
       if (result.error) setError(result.error);
+      else router.refresh();
     });
   }
 
@@ -56,6 +59,7 @@ export function PoolImportControls({ weekId }: { weekId: string }) {
       const text = await file.text();
       const result = await importSalaryCsv(weekId, file.name, text);
       if (result.error) setError(result.error);
+      else router.refresh();
     });
   }
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import {
   addPlayer,
   deletePlayer,
@@ -19,6 +20,7 @@ import { BucketBadge } from "@/components/parlays/bucket-badge";
 const initialState: ActionState = { error: null };
 
 function RemovePlayerButton({ playerId, sessionId }: { playerId: string; sessionId: string }) {
+  const router = useRouter();
   const [pending, startTransition] = useTransition();
   return (
     <Button
@@ -27,7 +29,12 @@ function RemovePlayerButton({ playerId, sessionId }: { playerId: string; session
       size="sm"
       className="text-muted-foreground"
       disabled={pending}
-      onClick={() => startTransition(() => deletePlayer(playerId, sessionId))}
+      onClick={() =>
+        startTransition(async () => {
+          await deletePlayer(playerId, sessionId);
+          router.refresh();
+        })
+      }
     >
       {pending ? "Removing…" : "Remove"}
     </Button>
@@ -35,6 +42,7 @@ function RemovePlayerButton({ playerId, sessionId }: { playerId: string; session
 }
 
 function OddsCell({ player, sessionId }: { player: TdParlayPlayer; sessionId: string }) {
+  const router = useRouter();
   const [value, setValue] = useState(player.american_odds !== null ? String(player.american_odds) : "");
   const [saving, setSaving] = useState(false);
 
@@ -44,6 +52,7 @@ function OddsCell({ player, sessionId }: { player: TdParlayPlayer; sessionId: st
     setSaving(true);
     await updatePlayerOdds(player.id, sessionId, n);
     setSaving(false);
+    router.refresh();
   }
 
   return (
