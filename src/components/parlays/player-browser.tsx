@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ChevronDown, ChevronUp, ChevronsUpDown } from "lucide-react";
 import { addPlayerFromRoster, refreshOdds } from "@/app/(dashboard)/parlays/actions";
 import { bucketForPlayer } from "@/lib/parlays/engine";
@@ -26,6 +27,7 @@ const COLUMNS: { key: SortKey; label: string }[] = [
 ];
 
 export function PlayerBrowser({ sessionId, players }: { sessionId: string; players: WeeklyPlayerRow[] }) {
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [position, setPosition] = useState<PositionFilter>("ALL");
   const [bucketFilter, setBucketFilter] = useState<BucketFilter>("ALL");
@@ -40,6 +42,7 @@ export function PlayerBrowser({ sessionId, players }: { sessionId: string; playe
   async function handleRefreshOdds() {
     setRefreshing(true);
     await refreshOdds(sessionId);
+    router.refresh();
     setRefreshing(false);
   }
 
