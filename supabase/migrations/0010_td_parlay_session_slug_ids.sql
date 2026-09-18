@@ -1,6 +1,15 @@
 -- Session ids become readable slugs (e.g. "week-3-td-parlays-a1b2c") instead of raw UUIDs,
 -- since the session id is what shows up in the URL. Groups/players/parlays keep their own
 -- UUID ids — only the session id and the two FK columns pointing at it change shape.
+--
+-- Several RLS policies reference td_parlay_sessions.id (and the session_id FK columns) inside
+-- EXISTS/JOIN clauses, which blocks altering those column types while the policies exist —
+-- drop and recreate them around the type change.
+drop policy if exists "td_parlay_players owner access" on public.td_parlay_players;
+drop policy if exists "td_parlay_groups owner access" on public.td_parlay_groups;
+drop policy if exists "td_parlay_group_players owner access" on public.td_parlay_group_players;
+drop policy if exists "td_parlays owner access" on public.td_parlays;
+
 alter table public.td_parlay_groups drop constraint if exists td_parlay_groups_session_id_fkey;
 alter table public.td_parlay_players drop constraint if exists td_parlay_players_session_id_fkey;
 
@@ -16,3 +25,47 @@ alter table public.td_parlay_groups
 alter table public.td_parlay_players
   add constraint td_parlay_players_session_id_fkey
   foreign key (session_id) references public.td_parlay_sessions(id) on delete cascade;
+
+create policy "td_parlay_players owner access" on public.td_parlay_players
+  for all to authenticated using (
+    exists (select 1 from public.td_parlay_sessions s where s.id = session_id and s.user_id = auth.uid())
+  ) with check (
+    exists (select 1 from public.td_parlay_sessions s where s.id = session_id and s.user_id = auth.uid())
+  );
+
+create policy "td_parlay_groups owner access" on public.td_parlay_groups
+  for all to authenticated using (
+    exists (select 1 from public.td_parlay_sessions s where s.id = session_id and s.user_id = auth.uid())
+  ) with check (
+    exists (select 1 from public.td_parlay_sessions s where s.id = session_id and s.user_id = auth.uid())
+  );
+
+create policy "td_parlay_group_players owner access" on public.td_parlay_group_players
+  for all to authenticated using (
+    exists (
+      select 1 from public.td_parlay_groups g
+      join public.td_parlay_sessions s on s.id = g.session_id
+      where g.id = group_id and s.user_id = auth.uid()
+    )
+  ) with check (
+    exists (
+      select 1 from public.td_parlay_groups g
+      join public.td_parlay_sessions s on s.id = g.session_id
+      where g.id = group_id and s.user_id = auth.uid()
+    )
+  );
+
+create policy "td_parlays owner access" on public.td_parlays
+  for all to authenticated using (
+    exists (
+      select 1 from public.td_parlay_groups g
+      join public.td_parlay_sessions s on s.id = g.session_id
+      where g.id = group_id and s.user_id = auth.uid()
+    )
+  ) with check (
+    exists (
+      select 1 from public.td_parlay_groups g
+      join public.td_parlay_sessions s on s.id = g.session_id
+      where g.id = group_id and s.user_id = auth.uid()
+    )
+  );
