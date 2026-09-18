@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Weekly DFS lineup strategy, bankroll discipline, and ROI tracking.",
     start_url: "/dashboard",
     display: "standalone",
-    background_color: "#0a0a0a",
-    theme_color: "#0a0a0a",
+    background_color: "#070b0a",
+    theme_color: "#070b0a",
     icons: [
       { src: "/icon-192", sizes: "192x192", type: "image/png", purpose: "any" },
       { src: "/icon-192", sizes: "192x192", type: "image/png", purpose: "maskable" },

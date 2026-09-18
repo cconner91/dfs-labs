@@ -1,21 +1,37 @@
 import Link from "next/link";
 import {
   currentBalance,
+  getAllocationRules,
+  getContestSubtypes,
   getCurrentWeek,
   getEntries,
   getOrCreateDefaultAccount,
   getTransactions,
+  getWeeklyContestLimits,
   requireUser,
 } from "@/lib/data";
-import { aggregateRoi, entryCost, entryProfit, formatCurrency, formatPercent } from "@/lib/metrics";
+import {
+  aggregateRoi,
+  entryCost,
+  entryProfit,
+  formatCurrency,
+  formatPercent,
+  rulesFromAllocationRules,
+  weeklyLargeFieldGppCount,
+  weeklySpendByCategory,
+} from "@/lib/metrics";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { WeekVsRulesCard } from "@/components/rules/week-vs-rules-card";
 
 export default async function DashboardPage() {
   const { supabase, user } = await requireUser();
-  const [account, currentWeek] = await Promise.all([
+  const [account, currentWeek, contestSubtypes, allocationRules, weeklyLimits] = await Promise.all([
     getOrCreateDefaultAccount(supabase, user.id),
     getCurrentWeek(supabase),
+    getContestSubtypes(supabase),
+    getAllocationRules(supabase, user.id),
+    getWeeklyContestLimits(supabase, user.id),
   ]);
   const [transactions, entries] = await Promise.all([
     getTransactions(supabase, account.id),
@@ -26,6 +42,12 @@ export default async function DashboardPage() {
   const thisWeekEntries = currentWeek ? entries.filter((e) => e.week_id === currentWeek.id) : [];
   const thisWeekCost = thisWeekEntries.reduce((s, e) => s + entryCost(e), 0);
   const thisWeekProfit = thisWeekEntries.reduce((s, e) => s + entryProfit(e), 0);
+  const subtypeById = new Map(contestSubtypes.map((c) => [c.id, c]));
+  const rules = rulesFromAllocationRules(allocationRules);
+  const weekSpend = weeklySpendByCategory(entries, subtypeById);
+  const largeFieldGppCount = weeklyLargeFieldGppCount(entries, subtypeById);
+  const largeFieldGppCap =
+    weeklyLimits.find((l) => l.metric === "large_field_gpp_count")?.max_count ?? null;
 
   const fourWeeksAgo = new Date();
   fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
@@ -77,10 +99,34 @@ export default async function DashboardPage() {
         </Card>
       </div>
 
+      {currentWeek &&
+        (rules.overall !== null ||
+          rules.GPP !== null ||
+          rules.CASH !== null ||
+          rules.CASH_H2H !== null ||
+          largeFieldGppCap !== null) && (
+          <WeekVsRulesCard
+            weekLabel={`Week ${currentWeek.week_number}`}
+            spend={weekSpend.get(currentWeek.id) ?? { overall: 0, GPP: 0, CASH: 0, CASH_H2H: 0 }}
+            bankrollBalance={balance}
+            rules={rules}
+            largeFieldGppCount={largeFieldGppCount.get(currentWeek.id) ?? 0}
+            largeFieldGppCap={largeFieldGppCap}
+          />
+        )}
+
       <div className="flex flex-wrap gap-3">
-        <Button render={<Link href="/strategy">Plan this week&apos;s strategy</Link>} />
-        <Button variant="outline" render={<Link href="/entries">Log a contest entry</Link>} />
-        <Button variant="outline" render={<Link href="/bankroll">Update bankroll</Link>} />
+        <Button nativeButton={false} render={<Link href="/strategy">Plan this week&apos;s strategy</Link>} />
+        <Button
+          nativeButton={false}
+          variant="outline"
+          render={<Link href="/entries">Log a contest entry</Link>}
+        />
+        <Button
+          nativeButton={false}
+          variant="outline"
+          render={<Link href="/bankroll">Update bankroll</Link>}
+        />
       </div>
     </div>
   );

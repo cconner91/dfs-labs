@@ -13,6 +13,8 @@ const entrySchema = z.object({
   entered_at: z.string().min(1),
   winnings: z.coerce.number().nonnegative("Winnings can't be negative").default(0),
   notes: z.string().optional(),
+  save_as_template: z.boolean(),
+  slate_type: z.enum(["classic", "showdown"]).default("classic"),
 });
 
 export interface EntryActionState {
@@ -32,6 +34,8 @@ export async function addEntry(
     entered_at: formData.get("entered_at"),
     winnings: formData.get("winnings") || 0,
     notes: formData.get("notes") || undefined,
+    save_as_template: formData.get("save_as_template") === "on",
+    slate_type: formData.get("slate_type") || "classic",
   });
 
   if (!parsed.success) {
@@ -54,9 +58,23 @@ export async function addEntry(
     entered_at: new Date(parsed.data.entered_at).toISOString(),
     winnings: parsed.data.winnings,
     notes: parsed.data.notes ?? null,
+    slate_type: parsed.data.slate_type,
   });
 
   if (error) return { error: error.message };
+
+  if (parsed.data.save_as_template) {
+    await supabase.from("contest_templates").insert({
+      user_id: user.id,
+      contest_subtype_id: parsed.data.contest_subtype_id,
+      label: `${parsed.data.contest_name} ($${parsed.data.entry_fee})`,
+      suggested_contest_name: parsed.data.contest_name,
+      entry_fee: parsed.data.entry_fee,
+      typical_num_entries: parsed.data.num_entries,
+      source: "manual",
+    });
+    // Best-effort — a failed template save shouldn't fail the entry that already saved successfully.
+  }
 
   revalidatePath("/entries");
   revalidatePath("/dashboard");

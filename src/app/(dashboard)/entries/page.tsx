@@ -1,47 +1,90 @@
 import {
   balanceAsOf,
   currentBalance,
+  getAllocationRules,
   getContestSubtypes,
+  getContestTemplates,
   getCurrentWeek,
   getEntries,
   getOrCreateDefaultAccount,
   getTransactions,
+  getWeeklyContestLimits,
   getWeeks,
   requireUser,
 } from "@/lib/data";
-import { allocationPct, entryCost, entryProfit, entryRoi, formatCurrency, formatPercent } from "@/lib/metrics";
+import {
+  allocationPct,
+  entryCost,
+  entryProfit,
+  entryRoi,
+  formatCurrency,
+  formatPercent,
+  rulesFromAllocationRules,
+  weeklyLargeFieldGppCount,
+  weeklySpendByCategory,
+} from "@/lib/metrics";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { EntryForm } from "@/components/entries/entry-form";
 import { DeleteEntryButton } from "@/components/entries/delete-entry-button";
+import { ManageTemplatesDialog } from "@/components/entries/manage-templates-dialog";
+import { WeekVsRulesCard } from "@/components/rules/week-vs-rules-card";
 
 export default async function EntriesPage() {
   const { supabase, user } = await requireUser();
-  const [weeks, contestSubtypes, entries, currentWeek, account] = await Promise.all([
-    getWeeks(supabase),
-    getContestSubtypes(supabase),
-    getEntries(supabase, user.id),
-    getCurrentWeek(supabase),
-    getOrCreateDefaultAccount(supabase, user.id),
-  ]);
+  const [weeks, contestSubtypes, entries, currentWeek, account, allocationRules, templates, weeklyLimits] =
+    await Promise.all([
+      getWeeks(supabase),
+      getContestSubtypes(supabase),
+      getEntries(supabase, user.id),
+      getCurrentWeek(supabase),
+      getOrCreateDefaultAccount(supabase, user.id),
+      getAllocationRules(supabase, user.id),
+      getContestTemplates(supabase, user.id),
+      getWeeklyContestLimits(supabase, user.id),
+    ]);
   const transactions = await getTransactions(supabase, account.id);
   const balance = currentBalance(transactions);
 
   const weekById = new Map(weeks.map((w) => [w.id, w]));
   const subtypeById = new Map(contestSubtypes.map((c) => [c.id, c]));
+  const rules = rulesFromAllocationRules(allocationRules);
+  const weekSpend = weeklySpendByCategory(entries, subtypeById);
+  const largeFieldGppCount = weeklyLargeFieldGppCount(entries, subtypeById);
+  const largeFieldGppCap =
+    weeklyLimits.find((l) => l.metric === "large_field_gpp_count")?.max_count ?? null;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold tracking-tight">Entries</h1>
-        <EntryForm
-          weeks={weeks}
-          contestSubtypes={contestSubtypes}
-          defaultWeekId={currentWeek?.id ?? null}
-          bankrollBalance={balance}
-        />
+        <div className="flex gap-2">
+          <ManageTemplatesDialog templates={templates} contestSubtypes={contestSubtypes} />
+          <EntryForm
+            weeks={weeks}
+            contestSubtypes={contestSubtypes}
+            templates={templates}
+            defaultWeekId={currentWeek?.id ?? null}
+            bankrollBalance={balance}
+            rules={rules}
+            weekSpend={weekSpend}
+            largeFieldGppCount={largeFieldGppCount}
+            largeFieldGppCap={largeFieldGppCap}
+          />
+        </div>
       </div>
+
+      {currentWeek && (
+        <WeekVsRulesCard
+          weekLabel={`Week ${currentWeek.week_number}`}
+          spend={weekSpend.get(currentWeek.id) ?? { overall: 0, GPP: 0, CASH: 0, CASH_H2H: 0 }}
+          bankrollBalance={balance}
+          rules={rules}
+          largeFieldGppCount={largeFieldGppCount.get(currentWeek.id) ?? 0}
+          largeFieldGppCap={largeFieldGppCap}
+        />
+      )}
 
       <Card>
         <CardContent className="p-0">
@@ -79,11 +122,14 @@ export default async function EntriesPage() {
                       <TableCell>{week ? `Wk ${week.week_number}` : "—"}</TableCell>
                       <TableCell className="max-w-[200px] truncate">{e.contest_name}</TableCell>
                       <TableCell>
-                        {subtype && (
-                          <Badge variant={subtype.category === "GPP" ? "default" : "secondary"}>
-                            {subtype.name}
-                          </Badge>
-                        )}
+                        <div className="flex flex-wrap gap-1">
+                          {subtype && (
+                            <Badge variant={subtype.category === "GPP" ? "default" : "secondary"}>
+                              {subtype.name}
+                            </Badge>
+                          )}
+                          {e.slate_type === "showdown" && <Badge variant="outline">Showdown</Badge>}
+                        </div>
                       </TableCell>
                       <TableCell className="text-right">{formatCurrency(entryCost(e))}</TableCell>
                       <TableCell className="text-right">{formatCurrency(e.winnings)}</TableCell>

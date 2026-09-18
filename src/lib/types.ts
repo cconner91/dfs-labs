@@ -5,11 +5,9 @@
 export type ContestCategory = "GPP" | "CASH";
 export type TransactionType = "deposit" | "withdrawal" | "adjustment";
 export type GoalPeriodType = "season" | "month" | "week";
-export type GoalMetric =
-  | "bankroll_growth"
-  | "roi_target"
-  | "max_allocation_pct"
-  | "discipline_streak";
+export type GoalMetric = "bankroll_growth" | "roi_target" | "discipline_streak";
+export type RuleCategory = "OVERALL" | "GPP" | "CASH" | "CASH_H2H";
+export type SlateType = "classic" | "showdown";
 
 export interface Platform {
   id: string;
@@ -79,6 +77,7 @@ export interface Entry {
   winnings: number;
   placement: number | null;
   notes: string | null;
+  slate_type: SlateType;
 }
 
 export interface Goal {
@@ -89,6 +88,47 @@ export interface Goal {
   metric: GoalMetric;
   target_value: number;
   created_at: string;
+}
+
+export interface AllocationRule {
+  id: string;
+  user_id: string;
+  category: RuleCategory;
+  max_pct: number; // whole percent, e.g. 15 = 15%
+  updated_at: string;
+}
+
+/** Convenience shape for the entry form / rule-compliance UI: one cap per category, in whole percent. */
+export interface Rules {
+  overall: number | null;
+  GPP: number | null;
+  CASH: number | null;
+  CASH_H2H: number | null;
+}
+
+export type WeeklyLimitMetric = "large_field_gpp_count";
+
+export interface WeeklyContestLimit {
+  id: string;
+  user_id: string;
+  metric: WeeklyLimitMetric;
+  max_count: number;
+  updated_at: string;
+}
+
+export type TemplateSource = "manual" | "draftkings_lobby";
+
+export interface ContestTemplate {
+  id: string;
+  user_id: string;
+  contest_subtype_id: string;
+  label: string;
+  suggested_contest_name: string | null;
+  entry_fee: number | null;
+  typical_num_entries: number;
+  source: TemplateSource;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface CsvImport {

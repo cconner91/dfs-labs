@@ -2,13 +2,17 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import type {
+  AllocationRule,
   BankrollAccount,
   BankrollTransaction,
   ContestSubtype,
+  ContestTemplate,
   Entry,
+  Goal,
   Lineup,
   Platform,
   Week,
+  WeeklyContestLimit,
 } from "@/lib/types";
 
 /** Throws if there's no logged-in user — every dashboard page is behind auth middleware anyway. */
@@ -137,6 +141,53 @@ export async function getEntries(
 export async function getLineups(supabase: SupabaseClient, userId: string): Promise<Lineup[]> {
   const { data, error } = await supabase
     .from("lineups")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function getAllocationRules(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<AllocationRule[]> {
+  const { data, error } = await supabase
+    .from("allocation_rules")
+    .select("*")
+    .eq("user_id", userId);
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function getContestTemplates(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<ContestTemplate[]> {
+  const { data, error } = await supabase
+    .from("contest_templates")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function getWeeklyContestLimits(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<WeeklyContestLimit[]> {
+  const { data, error } = await supabase
+    .from("weekly_contest_limits")
+    .select("*")
+    .eq("user_id", userId);
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function getGoals(supabase: SupabaseClient, userId: string): Promise<Goal[]> {
+  const { data, error } = await supabase
+    .from("goals")
     .select("*")
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
