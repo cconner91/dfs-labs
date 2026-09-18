@@ -10,6 +10,7 @@ import { signOut } from "@/app/(auth)/actions";
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/entries", label: "Entries" },
+  { href: "/player-pools", label: "Player Pools" },
   { href: "/bankroll", label: "Bankroll" },
   { href: "/strategy", label: "Strategy" },
   { href: "/analysis", label: "Analysis" },

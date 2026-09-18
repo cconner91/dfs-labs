@@ -140,6 +140,22 @@ export interface CsvImport {
   row_count: number;
 }
 
+export type PoolType = "CASH" | "GPP";
+export type Position = "QB" | "RB" | "WR" | "TE" | "DST";
+
+export interface PlayerPoolEntry {
+  id: string;
+  user_id: string;
+  week_id: string;
+  pool_type: PoolType;
+  dk_player_id: string;
+  name: string;
+  position: Position | null;
+  team: string | null;
+  salary: number | null;
+  created_at: string;
+}
+
 // Note: no hand-rolled `Database` type here on purpose — @supabase/supabase-js's
 // generic inference is strict about the exact shape (Relationships, etc.) and a
 // partial hand-written version fights it more than it helps. The Supabase clients

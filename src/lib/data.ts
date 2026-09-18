@@ -11,6 +11,7 @@ import type {
   Goal,
   Lineup,
   Platform,
+  PlayerPoolEntry,
   Week,
   WeeklyContestLimit,
 } from "@/lib/types";
@@ -60,6 +61,23 @@ export async function getCurrentWeek(supabase: SupabaseClient): Promise<Week | n
   if (upcoming.length > 0) return upcoming[0];
 
   return weeks[weeks.length - 1];
+}
+
+export async function getPlayerPoolEntries(
+  supabase: SupabaseClient,
+  userId: string,
+  weekId: string
+): Promise<PlayerPoolEntry[]> {
+  const { data, error } = await supabase
+    .from("player_pool_entries")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("week_id", weekId)
+    .order("pool_type")
+    .order("position")
+    .order("salary", { ascending: false, nullsFirst: false });
+  if (error) throw error;
+  return data ?? [];
 }
 
 /**
