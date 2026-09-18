@@ -173,9 +173,21 @@ export function generateParlaysForGroup(
   });
 
   const totalProbability = withProbability.reduce((sum, p) => sum + p.combinedProbability, 0);
-  const parlays: GeneratedParlay[] = withProbability.map((p) => {
+  const rawStakes = withProbability.map((p) => {
     const weight = totalProbability > 0 ? p.combinedProbability / totalProbability : 1 / withProbability.length;
-    const stake = Math.round(bankroll * weight * 100) / 100;
+    return Math.round(bankroll * weight);
+  });
+
+  // Whole-dollar stakes rounded independently can drift from the group's bankroll —
+  // push the leftover onto the largest stake so the set always sums to exactly `bankroll`.
+  const drift = Math.round(bankroll) - rawStakes.reduce((sum, s) => sum + s, 0);
+  if (drift !== 0 && rawStakes.length > 0) {
+    const maxIndex = rawStakes.indexOf(Math.max(...rawStakes));
+    rawStakes[maxIndex] += drift;
+  }
+
+  const parlays: GeneratedParlay[] = withProbability.map((p, i) => {
+    const stake = rawStakes[i];
     return {
       legs: p.legs,
       combinedProbability: p.combinedProbability,

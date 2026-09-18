@@ -203,7 +203,7 @@ export function GroupGenerator({
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                This generation
+                This generation &middot; {formatCurrency(generated.reduce((sum, p) => sum + p.stake, 0))} total wagered
               </p>
               <Button size="sm" onClick={handleSave} disabled={saving}>
                 {saving ? "Saving…" : "Save this set"}
@@ -220,7 +220,9 @@ export function GroupGenerator({
 
         {savedParlays.length > 0 && (
           <div className="space-y-2">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Saved</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Saved &middot; {formatCurrency(savedParlays.reduce((sum, p) => sum + p.stake, 0))} total wagered
+            </p>
             <div className="space-y-2">
               {savedParlays.map((p, i) => (
                 <ParlayCard key={p.id} parlay={p} index={i} sessionId={sessionId} />

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import {
   addPlayer,
   deletePlayer,
@@ -17,6 +17,22 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { BucketBadge } from "@/components/parlays/bucket-badge";
 
 const initialState: ActionState = { error: null };
+
+function RemovePlayerButton({ playerId, sessionId }: { playerId: string; sessionId: string }) {
+  const [pending, startTransition] = useTransition();
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="sm"
+      className="text-muted-foreground"
+      disabled={pending}
+      onClick={() => startTransition(() => deletePlayer(playerId, sessionId))}
+    >
+      {pending ? "Removing…" : "Remove"}
+    </Button>
+  );
+}
 
 function OddsCell({ player, sessionId }: { player: TdParlayPlayer; sessionId: string }) {
   const [value, setValue] = useState(player.american_odds !== null ? String(player.american_odds) : "");
@@ -123,11 +139,7 @@ export function PlayerPool({ sessionId, players }: { sessionId: string; players:
                       <BucketBadge bucket={bucket} />
                     </TableCell>
                     <TableCell>
-                      <form action={deletePlayer.bind(null, p.id, sessionId)}>
-                        <Button type="submit" variant="ghost" size="sm" className="text-muted-foreground">
-                          Remove
-                        </Button>
-                      </form>
+                      <RemovePlayerButton playerId={p.id} sessionId={sessionId} />
                     </TableCell>
                   </TableRow>
                 );
