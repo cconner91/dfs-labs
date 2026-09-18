@@ -145,7 +145,7 @@ export function PlayerBrowser({ sessionId, players }: { sessionId: string; playe
                 </TableHead>
               ))}
               <TableHead className="sticky top-0 z-10 bg-card">Bucket</TableHead>
-              <TableHead className="sticky top-0 z-10 bg-card" />
+              <TableHead className="sticky top-0 right-0 z-20 bg-card" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -179,7 +179,7 @@ export function PlayerBrowser({ sessionId, players }: { sessionId: string; playe
                   <TableCell>
                     <BucketBadge bucket={bucket} />
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="sticky right-0 z-10 bg-card">
                     <Button
                       size="sm"
                       variant={isAdded ? "secondary" : "default"}
