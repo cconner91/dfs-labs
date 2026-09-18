@@ -8,10 +8,14 @@ import { Card, CardContent } from "@/components/ui/card";
 
 function ImportButton({
   label,
+  importingLabel,
+  variant = "outline",
   importing,
   onSelect,
 }: {
   label: string;
+  importingLabel: string;
+  variant?: "default" | "outline";
   importing: boolean;
   onSelect: (file: File) => void;
 }) {
@@ -19,8 +23,8 @@ function ImportButton({
 
   return (
     <>
-      <Button type="button" variant="outline" disabled={importing} onClick={() => inputRef.current?.click()}>
-        {importing ? "Importing…" : label}
+      <Button type="button" variant={variant} disabled={importing} onClick={() => inputRef.current?.click()}>
+        {importing ? importingLabel : label}
       </Button>
       <input
         ref={inputRef}
@@ -65,14 +69,29 @@ export function PoolImportControls({ weekId }: { weekId: string }) {
 
   return (
     <Card>
-      <CardContent className="flex flex-wrap items-center gap-3 p-4">
-        <ImportButton label="Upload Groups CSV" importing={importingGroups} onSelect={handleGroupsFile} />
-        <ImportButton label="Upload Salary CSV" importing={importingSalary} onSelect={handleSalaryFile} />
+      <CardContent className="space-y-3 p-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <ImportButton
+            label="Upload Groups CSV"
+            importingLabel="Importing…"
+            variant="default"
+            importing={importingGroups}
+            onSelect={handleGroupsFile}
+          />
+          <ImportButton
+            label="Upload Salary CSV (optional)"
+            importingLabel="Importing…"
+            variant="outline"
+            importing={importingSalary}
+            onSelect={handleSalaryFile}
+          />
+        </div>
         <p className="text-xs text-muted-foreground">
-          Groups CSV sets who&apos;s in Cash/GPP this week (replaces the existing pool). Salary CSV fills in
-          position/team/salary for whoever&apos;s already in a pool.
+          The Groups CSV alone is enough to build your Cash/GPP pool — it&apos;s the one that sets who&apos;s in
+          each pool. The Salary CSV is optional and only adds position/team/salary on top of players already in
+          a pool; you don&apos;t need it to get started.
         </p>
-        {error && <p className="w-full text-sm text-destructive">{error}</p>}
+        {error && <p className="text-sm text-destructive">{error}</p>}
       </CardContent>
     </Card>
   );
